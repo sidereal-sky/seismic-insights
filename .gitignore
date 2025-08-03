@@ -23,3 +23,8 @@ Thumbs.db
 # Config
 .env
 .env.*
+
+# Batch pipeline
+batch_pipeline/output/
+batch_pipeline/artifacts/
+batch_pipeline/*.csv
