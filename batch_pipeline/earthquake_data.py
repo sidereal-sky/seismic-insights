@@ -5,7 +5,7 @@ def download_data(
     starttime: str,
     endtime: str,
     min_magnitude: float = 4.0,
-    output_file: str = "all_earthquakes.csv",
+    output_file: str = "usgs_earthquakes.csv",
     user_agent: str = "SeismicInsight/1.0 (test@gmail.com)"
 ) -> None:
     """
