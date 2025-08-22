@@ -1,0 +1,4 @@
+apache-flink==2.1.0
+kafka-python
+requests
+influxdb-client==1.38.0

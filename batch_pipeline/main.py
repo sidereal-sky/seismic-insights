@@ -31,13 +31,13 @@ def main():
              .config("spark.driver.bindAddress", "localhost")
              .config("spark.sql.session.timeZone", "UTC")
              .getOrCreate())
-        
+
     # Initialize InfluxDB adapter
     influx_adapter = SparkInfluxDBAdapter(
-        url='http://localhost:8086',
-        token='seismic-insights-token',
-        org='seismic-insights',
-        bucket='earthquakes'
+        url=os.getenv('INFLUXDB_URL'),
+        token=os.getenv('INFLUXDB_TOKEN'),
+        org=os.getenv('INFLUXDB_ORG'),
+        bucket=os.getenv('INFLUXDB_BUCKET')
     )
 
     raw = spark.read.option("header", True).csv(INPUT_FILE)
@@ -75,7 +75,7 @@ def main():
 
     # Write raw events to InfluxDB
     influx_adapter.write_raw_events(df)
-    
+
     # generate stats
     print("=============== Generating statistics ===============")
 
