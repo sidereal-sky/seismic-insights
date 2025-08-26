@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seismic Alert Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        .alerts-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .alert-item {
+            background: rgba(255,255,255,0.1);
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid;
+            transition: all 0.3s ease;
+        }
+        .alert-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+        .alert-critical {
+            border-left-color: #ff4757;
+            background: rgba(255, 71, 87, 0.2);
+        }
+        .alert-warning {
+            border-left-color: #ffa502;
+            background: rgba(255, 165, 2, 0.2);
+        }
+        .alert-info {
+            border-left-color: #3742fa;
+            background: rgba(55, 66, 250, 0.2);
+        }
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .alert-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .alert-time {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        .alert-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        .status-firing {
+            background: #ff4757;
+            color: white;
+        }
+        .status-resolved {
+            background: #2ed573;
+            color: white;
+        }
+        .refresh-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        .refresh-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+        .no-alerts {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.7;
+            font-style: italic;
+        }
+        .severity-critical { color: #ff4757; }
+        .severity-warning { color: #ffa502; }
+        .severity-info { color: #3742fa; }
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        .test-btn {
+            background: #2ed573;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .test-btn:hover {
+            background: #26d367;
+            transform: translateY(-2px);
+        }
+        .test-btn.critical {
+            background: #ff4757;
+        }
+        .test-btn.critical:hover {
+            background: #ff3838;
+        }
+    </style>
+    <script>
+        function refreshPage() {
+            window.location.reload();
+        }
+        
+        function sendTestAlert(type) {
+            const alerts = {
+                earthquake: {
+                    "labels": {
+                        "alertname": "HighMagnitudeEarthquake",
+                        "severity": "critical",
+                        "region": "California",
+                        "instance": "test-instance"
+                    },
+                    "annotations": {
+                        "summary": "Test high magnitude earthquake detected",
+                        "description": "Earthquake with magnitude 7.2 detected in California",
+                        "action": "Immediate response required"
+                    }
+                },
+                swarm: {
+                    "labels": {
+                        "alertname": "EarthquakeSwarm",
+                        "severity": "warning",
+                        "region": "Japan",
+                        "instance": "test-instance"
+                    },
+                    "annotations": {
+                        "summary": "Test earthquake swarm detected",
+                        "description": "5 earthquakes detected in 5 minutes in Japan",
+                        "research_note": "Potential aftershock sequence or volcanic activity"
+                    }
+                },
+                system: {
+                    "labels": {
+                        "alertname": "SystemDown",
+                        "severity": "critical",
+                        "region": "N/A",
+                        "instance": "test-service"
+                    },
+                    "annotations": {
+                        "summary": "Test service is down",
+                        "description": "test-service has been down for more than 5 minutes"
+                    }
+                }
+            };
+            
+            const alert = alerts[type];
+            const now = new Date().toISOString();
+            alert.startsAt = now;
+            alert.endsAt = new Date(Date.now() + 3600000).toISOString(); // +1 hour
+            
+            fetch('/webhook', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    alerts: [alert],
+                    groupLabels: {},
+                    commonLabels: alert.labels
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Alert sent:', data);
+                setTimeout(refreshPage, 1000); // Refresh after 1 second
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // Auto-refresh every 30 seconds
+        setTimeout(refreshPage, 30000);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Seismic Alert Dashboard</h1>
+            <p>Real-time monitoring of seismic events and system alerts</p>
+            <p><strong>Last Updated:</strong> {{ current_time }}</p>
+            <button class="refresh-btn" onclick="refreshPage()">Refresh</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Alert Pipeline</h3>
+            <p>Send test alerts to verify the monitoring system:</p>
+            <button class="test-btn critical" onclick="sendTestAlert('earthquake')">High Magnitude Earthquake</button>
+            <button class="test-btn" onclick="sendTestAlert('swarm')">Earthquake Swarm</button>
+            <button class="test-btn critical" onclick="sendTestAlert('system')">System Down</button>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_alerts }}</div>
+                <div class="stat-label">Total Alerts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value severity-critical">{{ critical_alerts }}</div>
+                <div class="stat-label">Critical</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value severity-warning">{{ warning_alerts }}</div>
+                <div class="stat-label">Warning</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ last_alert }}</div>
+                <div class="stat-label">Last Alert</div>
+            </div>
+        </div>
+        
+        <div class="alerts-section">
+            <h2>Recent Alerts</h2>
+            {% if alerts %}
+                {% for alert in alerts %}
+                <div class="alert-item alert-{{ alert.severity }}">
+                    <div class="alert-header">
+                        <div>
+                            <span class="alert-name">{{ alert.alertname }}</span>
+                            <span class="alert-status status-{{ alert.status }}">{{ alert.status }}</span>
+                        </div>
+                        <div class="alert-time">{{ alert.timestamp_str }}</div>
+                    </div>
+                    <div><strong>Region:</strong> {{ alert.region }}</div>
+                    <div><strong>Summary:</strong> {{ alert.summary }}</div>
+                    <div><strong>Description:</strong> {{ alert.description }}</div>
+                    {% if alert.status == 'firing' and alert.startsAt != 'N/A' %}
+                    <div><strong>Started:</strong> {{ alert.startsAt }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-alerts">
+                    <h3>No alerts received yet</h3>
+                    <p>Waiting for AlertManager to send notifications...</p>
+                    <p><em>Use the test buttons above to send sample alerts!</em></p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+groups:
+- name: seismic.rules
+  rules:
+  - alert: HighMagnitudeEarthquake
+    expr: earthquake_magnitude > 6.0
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High magnitude earthquake detected"
+      description: "Earthquake with magnitude {{ $value }} detected in {{ $labels.region }}"
+      action: "Immediate response required"
+
+  - alert: EarthquakeSwarm
+    expr: earthquake_count_5min > 3
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Earthquake swarm detected"
+      description: "{{ $value }} earthquakes detected in 5 minutes in {{ $labels.region }}"
+      research_note: "Potential aftershock sequence or volcanic activity"
+
+  - alert: SystemDown
+    expr: up == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Service is down"
+      description: "{{ $labels.instance }} has been down for more than 5 minutes"
