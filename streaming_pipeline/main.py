@@ -31,7 +31,7 @@ INFLUXDB_ORG = os.getenv('INFLUXDB_ORG')
 INFLUXDB_BUCKET = os.getenv('INFLUXDB_BUCKET')
 
 # Filtering config
-MIN_MAGNITUDE = 4.0
+MIN_MAGNITUDE = float(os.getenv('MIN_MAGNITUDE'))
 
 JOB_NAME = 'Seismic Streaming Pipeline'
 
@@ -72,7 +72,7 @@ def main():
     )
 
     filtered_events = events \
-        .filter(lambda x: x is not None and x['mag'] is not None and x['mag'] >= MIN_MAGNITUDE)
+        .filter(lambda ev: is_processable_event(ev, MIN_MAGNITUDE))
 
     deduped_events = filtered_events \
         .key_by(lambda x: x['id']) \

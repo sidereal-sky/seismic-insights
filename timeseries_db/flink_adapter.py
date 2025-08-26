@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 from .client import SeismicInfluxDBClient
+
 from .models import (
     EarthquakeEvent,
     DailyGlobalStats,
@@ -11,6 +12,9 @@ from .models import (
     DepthPatternAnalysis,
     SequenceDetection
 )
+
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO)
 
 class FlinkInfluxDBAdapter:
 
@@ -52,7 +56,7 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing raw event: {e}")
 
-        stream.map(sink_event)
+        return stream.map(sink_event)
 
     def write_daily_global_stats(self, stream):
         def sink_stat(stats: Dict[str, Any]):
@@ -61,8 +65,8 @@ class FlinkInfluxDBAdapter:
                 point = DailyGlobalStats(
                     date=timestamp,
                     eq_count=int(stats["eq_count"]),
-                    avg_mag=float(stats.get("avg_mag", 0)),
-                    max_mag=float(stats.get("max_mag", 0)),
+                    avg_mag=float(stats.get("avg_mag", "0")),
+                    max_mag=float(stats.get("max_mag", "0")),
                     source="stream"
                 ).to_influx_point("daily_global_stats")
 
@@ -79,8 +83,8 @@ class FlinkInfluxDBAdapter:
                 point = DailyGlobalStats(
                     date=datetime.now(),
                     eq_count=int(stats["eq_count"]),
-                    avg_mag=float(stats.get("avg_mag", 0)),
-                    max_mag=float(stats.get("max_mag", 0)),
+                    avg_mag=float(stats.get("avg_mag", "0")),
+                    max_mag=float(stats.get("max_mag", "0")),
                     source="stream"
                 ).to_influx_point("hourly_global_stats")
 
@@ -98,8 +102,8 @@ class FlinkInfluxDBAdapter:
                     timestamp=datetime.now(),
                     region=stats.get("region", "unknown"),
                     eq_count=int(stats["eq_count"]),
-                    avg_mag=float(stats.get("avg_mag", 0)),
-                    max_mag=float(stats.get("max_mag", 0)),
+                    avg_mag=float(stats.get("avg_mag", "0")),
+                    max_mag=float(stats.get("max_mag", "0")),
                     window_type=window_type,
                     source="stream"
                 ).to_influx_point("rolling_regional_stats")
@@ -114,14 +118,14 @@ class FlinkInfluxDBAdapter:
     def write_significant_alerts(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
-                max_mag = float(stats.get("max_mag", 0))
+                max_mag = float(stats.get("max_mag", "0"))
                 alert_level = "critical" if max_mag >= 7.0 else "high" if max_mag >= 6.5 else "moderate"
 
                 point = SignificantEventAlert(
                     timestamp=datetime.now(),
                     region=stats.get("region", "unknown"),
                     eq_count=int(stats["eq_count"]),
-                    avg_mag=float(stats.get("avg_mag", 0)),
+                    avg_mag=float(stats.get("avg_mag", "0")),
                     max_mag=max_mag,
                     alert_level=alert_level,
                     source="stream"
@@ -172,20 +176,20 @@ class FlinkInfluxDBAdapter:
     def write_sequence_detection(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
-                first_time = datetime.fromisoformat(stats["first_event_time"].replace('Z', '+00:00')) if stats.get("first_event_time") else datetime.now()
-                last_time = datetime.fromisoformat(stats["last_event_time"].replace('Z', '+00:00')) if stats.get("last_event_time") else datetime.now()
+                first_time = datetime.fromisoformat(stats["first_event_time"].replace('Z', '+00:00')) if stats.get("first_event_time") and stats["first_event_time"] != "" else datetime.now()
+                last_time = datetime.fromisoformat(stats["last_event_time"].replace('Z', '+00:00')) if stats.get("last_event_time") and stats["last_event_time"] != "" else datetime.now()
 
                 point = SequenceDetection(
                     timestamp=datetime.now(),
                     region=stats.get("region", "unknown"),
                     eq_count=int(stats["eq_count"]),
-                    avg_mag=float(stats.get("avg_mag", 0)),
-                    max_mag=float(stats.get("max_mag", 0)),
+                    avg_mag=float(stats.get("avg_mag", "0")),
+                    max_mag=float(stats.get("max_mag", "0")),
                     first_event_time=first_time,
                     last_event_time=last_time,
-                    duration_minutes=int(stats.get("duration_minutes", 0)),
-                    lat_grid=int(stats.get("lat_grid", 0)),
-                    lon_grid=int(stats.get("lon_grid", 0)),
+                    duration_minutes=int(stats.get("duration_minutes", "0")),
+                    lat_grid=int(stats.get("lat_grid", "0")),
+                    lon_grid=int(stats.get("lon_grid", "0")),
                     sequence_type=stats.get("sequence_type", "unknown"),
                     source="stream"
                 ).to_influx_point("sequence_detection")

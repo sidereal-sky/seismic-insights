@@ -1,2 +1,0 @@
-taskmanager.network.numberOfBuffers: 4096
-parallelism.default: 1

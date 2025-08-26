@@ -1,6 +1,7 @@
 import json
 import time
 import os
+import logging
 
 from kafka import KafkaProducer
 
@@ -36,6 +37,7 @@ class SeismicEventProducer:
 
             event = self.event_generator.generate_event()
             self.produce_event(event)
+            logging.info(f"Produced event: {event}")
 
             elapsed = time.time() - start_time
             sleep_time = max(0, PRODUCE_INTERVAL_SECS - elapsed)
@@ -43,6 +45,9 @@ class SeismicEventProducer:
                 time.sleep(sleep_time)
 
 def main():
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Starting Seismic Event Producer...")
+
     producer = SeismicEventProducer()
     producer.run()
 

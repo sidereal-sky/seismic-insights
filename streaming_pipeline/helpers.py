@@ -1,12 +1,16 @@
 import json
 import re
+import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 from pyflink.datastream.functions import KeyedProcessFunction
 from pyflink.datastream.state import ValueStateDescriptor
 from pyflink.common.typeinfo import Types
 
-def parse_event(json_str: str) -> Optional[Dict[str, Any]]:
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO)
+
+def parse_event(json_str):
     """
     Parses a JSON string from Kafka into an earthquake event dictionary.
     Enriches the event with derived fields like mag_bin, depth_bin, and region.
@@ -51,15 +55,19 @@ def parse_event(json_str: str) -> Optional[Dict[str, Any]]:
         place = event.get("place", "")
         event["region"] = get_region_from_place(place)
 
+        for key, value in event.items():
+            if value is not None and not isinstance(value, str):
+                event[key] = str(value)
+
+        logging.info(f"Parsed event: {event}")
         return event
 
     except Exception as e:
         # Log error but don't raise to avoid breaking the stream
-        import logging
         logging.error(f"Error parsing event: {e}")
         return None
 
-def parse_time_field(time_value) -> Optional[datetime]:
+def parse_time_field(time_value):
     """
     Parses time field which can be Unix timestamp (ms) or ISO string.
     
@@ -97,7 +105,7 @@ def parse_time_field(time_value) -> Optional[datetime]:
     except Exception:
         return None
 
-def get_magnitude_bin(magnitude: float) -> str:
+def get_magnitude_bin(magnitude):
     """
     Categorizes earthquake magnitude into bins.
 
@@ -114,7 +122,7 @@ def get_magnitude_bin(magnitude: float) -> str:
     upper = lower + 0.9
     return f"{lower}.0-{upper:.1f}"
 
-def get_depth_bin(depth: float) -> str:
+def get_depth_bin(depth):
     """
     Categorizes earthquake depth into bins.
 
@@ -133,7 +141,7 @@ def get_depth_bin(depth: float) -> str:
     else:
         return "deep"
 
-def get_region_from_place(place: str) -> str:
+def get_region_from_place(place):
     """
     Extracts region from the place string.
     Looks for text after comma or "of", cleans up "region" suffix.
@@ -164,7 +172,7 @@ def get_region_from_place(place: str) -> str:
     # Fallback to the whole place string
     return clean_region_name(place)
 
-def clean_region_name(region: str) -> str:
+def clean_region_name(region):
     """
     Cleans up region name by removing common suffixes.
 
@@ -181,6 +189,12 @@ def clean_region_name(region: str) -> str:
     cleaned = re.sub(r"\s+region$", "", region.strip(), flags=re.IGNORECASE)
 
     return cleaned if cleaned else "Unknown"
+
+def is_processable_event(event, min_magnitude):
+    """
+    Checks if an event is processable based on its magnitude.
+    """
+    return event is not None and event.get("mag") is not None and float(event.get("mag")) >= min_magnitude
 
 class DeduplicateById(KeyedProcessFunction):
     """
@@ -216,7 +230,6 @@ class DeduplicateById(KeyedProcessFunction):
                 self.seen_state.update(True)
                 yield value
         except Exception as e:
-            import logging
             logging.error(f"Error in deduplication: {e}")
             # In case of error, output the event to avoid data loss
             yield value

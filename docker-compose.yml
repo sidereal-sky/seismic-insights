@@ -74,6 +74,7 @@ services:
         condition: service_healthy
       influxdb:
         condition: service_healthy
+    cpus: 4
     networks:
       - seismic-insights-network
     ports:
