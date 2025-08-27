@@ -32,3 +32,9 @@ scrape_configs:
     static_configs:
       - targets: ['kafka:9092']
     scrape_interval: 30s
+
+  - job_name: 'seismic-metrics'
+    static_configs:
+      - targets: ['seismic-metrics-exporter:9101']
+    scrape_interval: 15s
+    metrics_path: '/metrics'

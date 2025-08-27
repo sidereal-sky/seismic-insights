@@ -1,26 +1,72 @@
 groups:
 - name: seismic.rules
   rules:
+  
   - alert: HighMagnitudeEarthquake
     expr: earthquake_magnitude > 6.0
     for: 0m
     labels:
       severity: critical
     annotations:
-      summary: "High magnitude earthquake detected"
-      description: "Earthquake with magnitude {{ $value }} detected in {{ $labels.region }}"
-      action: "Immediate response required"
+      summary: "HIGH MAGNITUDE EARTHQUAKE DETECTED"
+      description: "Earthquake with magnitude {{ $value }} detected in {{ $labels.region }} (depth: {{ $labels.depth_bin }})"
+      action: "IMMEDIATE RESPONSE REQUIRED - Emergency protocols activated"
+      region: "{{ $labels.region }}"
 
-  - alert: EarthquakeSwarm
-    expr: earthquake_count_5min > 3
-    for: 5m
+  - alert: CriticalMagnitudeEarthquake
+    expr: earthquake_magnitude > 7.0
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: "CRITICAL MAGNITUDE EARTHQUAKE"
+      description: "MAJOR earthquake with magnitude {{ $value }} in {{ $labels.region }} - CATASTROPHIC EVENT"
+      action: "HIGHEST PRIORITY - Full emergency response required"
+      region: "{{ $labels.region }}"
+
+  - alert: EarthquakeSwarmDetected
+    expr: earthquake_count_5min >= 3
+    for: 2m
     labels:
       severity: warning
     annotations:
       summary: "Earthquake swarm detected"
       description: "{{ $value }} earthquakes detected in 5 minutes in {{ $labels.region }}"
-      research_note: "Potential aftershock sequence or volcanic activity"
+      research_note: "Potential aftershock sequence, foreshocks, or volcanic activity"
+      region: "{{ $labels.region }}"
 
+  - alert: EarthquakeSequenceActive
+    expr: earthquake_swarm_detected == 1
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Active earthquake sequence detected"
+      description: "Rapid sequence of earthquakes detected in {{ $labels.region }} - monitoring for escalation"
+      research_note: "Sequence detection algorithm triggered - {{ $labels.region }} showing unusual activity"
+      region: "{{ $labels.region }}"
+
+  - alert: RegionalSeismicActivity
+    expr: earthquake_count_hourly > 10
+    for: 10m
+    labels:
+      severity: warning  
+    annotations:
+      summary: "Elevated regional seismic activity"
+      description: "{{ $value }} earthquakes detected in last hour in {{ $labels.region }}"
+      research_note: "Regional activity above normal threshold"
+      region: "{{ $labels.region }}"
+
+  - alert: SeismicDataPipelineDown
+    expr: (time() - seismic_pipeline_last_update_timestamp) > 300
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Seismic data pipeline failure"
+      description: "No seismic data updates received for {{ $value | humanizeDuration }}"
+      action: "Check streaming pipeline, Kafka, and InfluxDB connectivity"
+  
   - alert: SystemDown
     expr: up == 0
     for: 5m
@@ -28,4 +74,15 @@ groups:
       severity: critical
     annotations:
       summary: "Service is down"
-      description: "{{ $labels.instance }} has been down for more than 5 minutes"
+      description: "{{ $labels.instance }} ({{ $labels.job }}) has been down for more than 5 minutes"
+      action: "Check service health and restart if necessary"
+
+  - alert: InfluxDBConnectionLost
+    expr: influxdb_connection_status == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "InfluxDB connection lost"
+      description: "Metrics exporter cannot connect to InfluxDB - seismic data unavailable"
+      action: "Check InfluxDB service and network connectivity"
