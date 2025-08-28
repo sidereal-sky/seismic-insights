@@ -117,9 +117,121 @@ services:
         max_attempts: 5
         window: 120s
 
+  grafana:
+    image: grafana/grafana-oss:latest
+    networks:
+      - seismic-insights-network
+    container_name: seismic-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_INSTALL_PLUGINS=grafana-worldmap-panel,grafana-clock-panel,yesoreyeram-boomtheme-panel
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_LOG_LEVEL=debug
+      - INFLUXDB_USERNAME=${INFLUXDB_USERNAME}
+      - INFLUXDB_PASSWORD=${INFLUXDB_PASSWORD}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    networks:
+      - seismic-insights-network
+    container_name: seismic-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/seismic_rules.yml:/etc/prometheus/seismic_rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    networks:
+      - seismic-insights-network
+    container_name: seismic-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  webhook-receiver:
+    build:
+      context: .
+      dockerfile: webhook_receiver/Dockerfile
+    networks:
+      - seismic-insights-network
+    container_name: seismic-webhook-receiver
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  metrics-exporter:
+    build:
+      context: .
+      dockerfile: metrics_exporter/Dockerfile
+    networks:
+      - seismic-insights-network
+    container_name: seismic-metrics-exporter
+    ports:
+      - "9101:9101"
+    environment:
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9101/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
 volumes:
   influxdb_data:
   influxdb_config:
+  grafana_data:
+  prometheus_data:
+  alertmanager_data:
 
 networks:
   seismic-insights-network:
