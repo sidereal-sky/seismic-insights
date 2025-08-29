@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-receiver
+  namespace: seismic-insights
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-receiver
+  template:
+    metadata:
+      labels:
+        app: webhook-receiver
+    spec:
+      containers:
+      - name: seismic-webhook-receiver
+        image: seismic-insights/webhook-receiver:latest
+        imagePullPolicy: Never  # Locally built image
+        ports:
+        - containerPort: 5001
+      restartPolicy: Always

@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: batch-pipeline
+  namespace: seismic-insights
+spec:
+  schedule: "* * * * *" # Every minute (for demo purposes, otherwise it would make sense to have it as "daily at 00:00")
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: batch-pipeline
+            image: seismic-insights/batch-pipeline:latest
+            imagePullPolicy: Never  # Locally built image
+            ports:
+            - containerPort: 4040
+            envFrom:
+            - configMapRef:
+                name: seismic-config
+            env:
+            - name: INFLUXDB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: seismic-config
+                  key: INFLUXDB_URL
+            - name: INFLUXDB_ORG
+              valueFrom:
+                configMapKeyRef:
+                  name: seismic-config
+                  key: INFLUXDB_ORG
+            - name: INFLUXDB_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: seismic-config
+                  key: INFLUXDB_BUCKET
+            - name: INFLUXDB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: seismic-secrets
+                  key: INFLUXDB_TOKEN
+            - name: DATA_DELTA_SECONDS
+              value: "60"
+          restartPolicy: OnFailure

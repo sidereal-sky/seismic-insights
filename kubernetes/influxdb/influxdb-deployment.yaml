@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  namespace: seismic-insights
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+      - name: seismic-influxdb
+        image: influxdb:2.7
+        ports:
+        - containerPort: 8086
+        env:
+        - name: DOCKER_INFLUXDB_INIT_MODE
+          value: "setup"
+        - name: DOCKER_INFLUXDB_INIT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: seismic-secrets
+              key: INFLUXDB_USERNAME
+        - name: DOCKER_INFLUXDB_INIT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: seismic-secrets
+              key: INFLUXDB_PASSWORD
+        - name: DOCKER_INFLUXDB_INIT_ORG
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: INFLUXDB_ORG
+        - name: DOCKER_INFLUXDB_INIT_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: INFLUXDB_BUCKET
+        - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: seismic-secrets
+              key: INFLUXDB_TOKEN
+        volumeMounts:
+        - name: influxdb-data
+          mountPath: /var/lib/influxdb2
+        - name: influxdb-config
+          mountPath: /etc/influxdb2
+      volumes:
+      - name: influxdb-data
+        emptyDir: {}
+      - name: influxdb-config
+        emptyDir: {}

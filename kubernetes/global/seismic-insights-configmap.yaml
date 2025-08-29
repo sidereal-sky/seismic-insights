@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seismic-config
+  namespace: seismic-insights
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_TOPICS: "seismic-events"
+  KAFKA_TOPIC: "seismic-events"
+  KAFKA_GROUP_ID: "seismic-flink-group"
+  KAFKA_SOURCE_NAME: "seismic-events-source"
+  INFLUXDB_URL: "http://influxdb:8086"
+  INFLUXDB_ORG: "seismic-insights"
+  INFLUXDB_BUCKET: "earthquakes"
+  MIN_MAGNITUDE: "4.0"
+  JOB_NAME: "Seismic Streaming Pipeline"
+  PRODUCE_INTERVAL_SECS: "5"

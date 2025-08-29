@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: seismic-insights
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - "seismic_rules.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'influxdb'
+        static_configs:
+          - targets: ['influxdb:8086']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'grafana'
+        static_configs:
+          - targets: ['grafana:3000']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'kafka'
+        static_configs:
+          - targets: ['kafka:9092']
+        scrape_interval: 30s
+
+      - job_name: 'seismic-metrics'
+        static_configs:
+          - targets: ['metrics-exporter:9101']
+        scrape_interval: 15s
+        metrics_path: '/metrics'
+  seismic_rules.yml: |
+    groups:
+    - name: seismic.rules
+      rules:
+      
+      - alert: HighMagnitudeEarthquake
+        expr: earthquake_magnitude > 6.0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HIGH MAGNITUDE EARTHQUAKE DETECTED"
+          description: "Earthquake with magnitude {{ $value }} detected in {{ $labels.region }} (depth: {{ $labels.depth_bin }})"
+          action: "IMMEDIATE RESPONSE REQUIRED - Emergency protocols activated"
+          region: "{{ $labels.region }}"
+
+      - alert: CriticalMagnitudeEarthquake
+        expr: earthquake_magnitude > 7.0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL MAGNITUDE EARTHQUAKE"
+          description: "MAJOR earthquake with magnitude {{ $value }} in {{ $labels.region }} - CATASTROPHIC EVENT"
+          action: "HIGHEST PRIORITY - Full emergency response required"
+          region: "{{ $labels.region }}"
+
+      - alert: EarthquakeSwarmDetected
+        expr: earthquake_count_5min >= 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Earthquake swarm detected"
+          description: "{{ $value }} earthquakes detected in 5 minutes in {{ $labels.region }}"
+          research_note: "Potential aftershock sequence, foreshocks, or volcanic activity"
+          region: "{{ $labels.region }}"
+
+      - alert: EarthquakeSequenceActive
+        expr: earthquake_swarm_detected == 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Active earthquake sequence detected"
+          description: "Rapid sequence of earthquakes detected in {{ $labels.region }} - monitoring for escalation"
+          research_note: "Sequence detection algorithm triggered - {{ $labels.region }} showing unusual activity"
+          region: "{{ $labels.region }}"
+
+      - alert: RegionalSeismicActivity
+        expr: earthquake_count_hourly > 10
+        for: 10m
+        labels:
+          severity: warning  
+        annotations:
+          summary: "Elevated regional seismic activity"
+          description: "{{ $value }} earthquakes detected in last hour in {{ $labels.region }}"
+          research_note: "Regional activity above normal threshold"
+          region: "{{ $labels.region }}"
+
+      - alert: SeismicDataPipelineDown
+        expr: (time() - seismic_pipeline_last_update_timestamp) > 300
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Seismic data pipeline failure"
+          description: "No seismic data updates received for {{ $value | humanizeDuration }}"
+          action: "Check streaming pipeline, Kafka, and InfluxDB connectivity"
+      
+      - alert: SystemDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is down"
+          description: "{{ $labels.instance }} ({{ $labels.job }}) has been down for more than 5 minutes"
+          action: "Check service health and restart if necessary"
+
+      - alert: InfluxDBConnectionLost
+        expr: influxdb_connection_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "InfluxDB connection lost"
+          description: "Metrics exporter cannot connect to InfluxDB - seismic data unavailable"
+          action: "Check InfluxDB service and network connectivity"

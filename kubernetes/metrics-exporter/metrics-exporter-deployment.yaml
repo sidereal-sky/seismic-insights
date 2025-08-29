@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-exporter
+  namespace: seismic-insights
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: metrics-exporter
+    spec:
+      containers:
+      - name: seismic-metrics-exporter
+        image: seismic-insights/metrics-exporter:latest
+        imagePullPolicy: Never  # Locally built image
+        ports:
+        - containerPort: 9101
+        envFrom:
+        - configMapRef:
+            name: seismic-config
+        env:
+        - name: INFLUXDB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: INFLUXDB_URL
+        - name: INFLUXDB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: seismic-secrets
+              key: INFLUXDB_TOKEN
+        - name: INFLUXDB_ORG
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: INFLUXDB_ORG
+        - name: INFLUXDB_BUCKET
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: INFLUXDB_BUCKET
+      restartPolicy: Always

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-producer
+  namespace: seismic-insights
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: event-producer
+  template:
+    metadata:
+      labels:
+        app: event-producer
+    spec:
+      containers:
+      - name: event-producer
+        image: seismic-insights/event-producer:latest
+        imagePullPolicy: Never  # Locally built image
+        envFrom:
+        - configMapRef:
+            name: seismic-config
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: KAFKA_TOPIC
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: KAFKA_TOPIC
+        - name: PRODUCE_INTERVAL_SECS
+          valueFrom:
+            configMapKeyRef:
+              name: seismic-config
+              key: PRODUCE_INTERVAL_SECS
+      restartPolicy: Always

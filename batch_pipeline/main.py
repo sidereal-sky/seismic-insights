@@ -1,4 +1,5 @@
 from aggregates import *
+from datetime import datetime, timedelta
 from helpers import *
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, year, month, avg, count, to_date, floor, weekofyear
@@ -12,16 +13,34 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from timeseries_db.spark_adapter import SparkInfluxDBAdapter
 
 # Constants for earthquake data
-START_DATE = "2024-08-03"
-END_DATE = "2025-08-03"
 MIN_MAGNITUDE = 4.0
 
 # Constants for file paths
 INPUT_FILE = "usgs_earthquakes.csv"
 OUTPUT_FILE = "output/stats"
 
+def get_time_range():
+    start_date = os.getenv("START_DATE")
+    end_date = os.getenv("END_DATE")
+
+    if start_date and end_date:
+        print(f"Using provided date range: {start_date} to {end_date}")
+        return start_date, end_date
+
+    delta_seconds = int(os.getenv("DATA_DELTA_SECONDS"))
+
+    now = datetime.utcnow()
+    start_time = now - timedelta(seconds=delta_seconds)
+
+    starttime = start_time.strftime('%Y-%m-%dT%H:%M:%S')
+    endtime = now.strftime('%Y-%m-%dT%H:%M:%S')
+
+    print(f"Using calculated time range: {starttime} to {endtime} (last {delta_seconds} seconds)")
+    return starttime, endtime
+
 def main():
-    download_data(starttime=START_DATE, endtime=END_DATE, min_magnitude=MIN_MAGNITUDE, output_file=INPUT_FILE)
+    starttime, endtime = get_time_range()
+    download_data(starttime=starttime, endtime=endtime, min_magnitude=MIN_MAGNITUDE, output_file=INPUT_FILE)
 
     # Configure Spark to run locally with proper networking settings
     spark = (SparkSession.builder

@@ -1,0 +1,2102 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: seismic-insights
+data:
+  01-realtime-operations.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 1,
+      "links": [],
+      "liveNow": true,
+      "panels": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Live earthquake events",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 7
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "magnitude"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "gradient",
+                      "type": "gauge"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "_time"
+              }
+            ]
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"_field\"] == \"magnitude\" or r[\"_field\"] == \"place\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.magnitude and exists r.place)\n  |> sort(columns: [\"_time\"], desc: true)\n  |> group()\n  |> limit(n: 50)\n  |> keep(columns: [\"_time\", \"place\", \"magnitude\"])",
+              "refId": "A"
+            }
+          ],
+          "title": "Live Earthquake Feed",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Global earthquake activity rate",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 20
+                  },
+                  {
+                    "color": "red",
+                    "value": 50
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
+          "id": 2,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"daily_global_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> last()",
+              "refId": "A"
+            }
+          ],
+          "title": "Global Activity (last week)",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Strongest earthquake activity",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 10,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 5
+                  },
+                  {
+                    "color": "orange",
+                    "value": 6
+                  },
+                  {
+                    "color": "red",
+                    "value": 7
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 18,
+            "y": 0
+          },
+          "id": 3,
+          "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "text": {}
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"daily_global_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"max_mag\")\n  |> last()",
+              "refId": "A"
+            }
+          ],
+          "title": "Max Magnitude (last week)",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Significant earthquake alerts (magnitude >= 6.0)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 20,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 8,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "always",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byFrameRefID",
+                  "options": "A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "${__field.labels.region}"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none",
+              "hoverProximity": 10
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"_field\"] == \"magnitude\")\n  |> filter(fn: (r) => r[\"_value\"] >= 6.0)\n  |> group(columns: [\"region\"])\n  |> max()",
+              "refId": "A"
+            }
+          ],
+          "title": "Significant Event Alerts",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Real-time magnitude distribution",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                }
+              },
+              "mappings": []
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byFrameRefID",
+                  "options": "A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "${__field.labels.mag_bin}"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 6,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true,
+              "values": []
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"monthly_magnitude_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"mag_bin\"])\n  |> sum()",
+              "refId": "A"
+            }
+          ],
+          "title": "Live Magnitude Distribution",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Regional activity comparison",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "id": 7,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"weekly_regional_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\" or r[\"_field\"] == \"avg_mag\" or r[\"_field\"] == \"max_mag\")\n  |> group(columns: [\"region\", \"_field\"])\n  |> sum()\n  |> pivot(rowKey:[\"region\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> group()\n  |> drop(columns: [\"_start\", \"_stop\"])\n  |> sort(columns: [\"eq_count\"], desc: true)\n  |> limit(n: 20)",
+              "refId": "A"
+            }
+          ],
+          "title": "Regional Activity",
+          "type": "table"
+        }
+      ],
+      "refresh": "5s",
+      "schemaVersion": 38,
+      "tags": [
+        "seismic",
+        "real-time",
+        "operations"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-2h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Seismic Activity",
+      "uid": "seismic-operations",
+      "version": 1,
+      "weekStart": ""
+    }
+  02-geographic-intelligence.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 2,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Interactive world map showing earthquake locations",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 4
+                  },
+                  {
+                    "color": "orange",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 6
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "basemap": {
+              "config": {},
+              "name": "Layer 0",
+              "type": "default"
+            },
+            "controls": {
+              "mouseWheelZoom": true,
+              "showAttribution": true,
+              "showDebug": false,
+              "showMeasure": false,
+              "showScale": false,
+              "showZoom": true
+            },
+            "layers": [
+              {
+                "config": {
+                  "showLegend": true,
+                  "style": {
+                    "color": {
+                      "field": "magnitude",
+                      "fixed": "dark-green"
+                    },
+                    "opacity": 0.8,
+                    "rotation": {
+                      "fixed": 0,
+                      "max": 360,
+                      "min": -360,
+                      "mode": "mod"
+                    },
+                    "size": {
+                      "field": "magnitude",
+                      "fixed": 5,
+                      "max": 20,
+                      "min": 2
+                    },
+                    "symbol": {
+                      "fixed": "img/icons/marker/circle.svg",
+                      "mode": "fixed"
+                    },
+                    "textConfig": {
+                      "fontSize": 12,
+                      "offsetX": 0,
+                      "offsetY": 0,
+                      "textAlign": "center",
+                      "textBaseline": "middle"
+                    }
+                  }
+                },
+                "location": {
+                  "mode": "coords",
+                  "coords": {
+                    "latitude": "latitude",
+                    "longitude": "longitude"
+                  },
+                  "latitude": "latitude",
+                  "longitude": "longitude"
+                },
+                "name": "Earthquake Events",
+                "tooltip": true,
+                "type": "markers"
+              }
+            ],
+            "tooltip": {
+              "mode": "details"
+            },
+            "view": {
+              "allLayers": true,
+              "id": "coords",
+              "lat": 20,
+              "lon": 0,
+              "zoom": 2
+            }
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"_field\"] == \"event_id\" or r[\"_field\"] == \"magnitude\" or r[\"_field\"] == \"latitude\" or r[\"_field\"] == \"longitude\" or r[\"_field\"] == \"place\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.magnitude and exists r.latitude and exists r.longitude)\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 1000)",
+              "refId": "A"
+            }
+          ],
+          "title": "Global Earthquake Map",
+          "type": "geomap"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Regional earthquake density by week",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 2,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"weekly_regional_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"region\"])\n  |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)",
+              "refId": "A"
+            }
+          ],
+          "title": "Regional Activity Trends",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Top most active regions by earthquake count",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "hidden",
+                "barAlignment": 0,
+                "drawStyle": "bars",
+                "fillOpacity": 100,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "id": 3,
+          "options": {
+            "barWidth": 1,
+            "fullHighlight": true,
+            "groupWidth": 1,
+            "showValue": "always",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"weekly_regional_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"region\"])\n  |> sum()\n  |> drop(columns: [\"_time\", \"_start\", \"_stop\"])\n  |> map(fn: (r) => {\n      return {\n        _time: now(),\n        _field: r.region,\n        _value: r._value\n      }\n  })\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: 15)",          "refId": "A"
+            }
+          ],
+          "title": "Most Active Regions",
+          "type": "barchart"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Depth distribution analysis",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                }
+              },
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 20
+          },
+          "id": 4,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true,
+              "values": []
+            },
+            "pieType": "donut",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"monthly_depth_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"depth_bin\"])\n  |> sum()\n  |> map(fn: (r) => {\n      label = if r.depth_bin == \"shallow\" then \"Shallow\"\n              else if r.depth_bin == \"intermediate\" then \"Intermediate\"\n              else if r.depth_bin == \"deep\" then \"Deep\"\n              else r.depth_bin\n      return {r with _field: label}\n  })\n  |> drop(columns: [\"depth_bin\"])\n  |> group(columns: [\"_field\"])",
+              "refId": "A"
+            }
+          ],
+          "title": "Global Depth Distribution",
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "_value(.+)",
+                "renamePattern": "$1"
+              }
+            }
+          ],
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Romanian earthquake focus",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 4
+                  },
+                  {
+                    "color": "orange",
+                    "value": 5
+                  },
+                  {
+                    "color": "red",
+                    "value": 6
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 20
+          },
+          "id": 5,
+          "options": {
+            "basemap": {
+              "config": {},
+              "name": "Layer 0",
+              "type": "default"
+            },
+            "controls": {
+              "mouseWheelZoom": true,
+              "showAttribution": true,
+              "showDebug": false,
+              "showMeasure": false,
+              "showScale": false,
+              "showZoom": true
+            },
+            "layers": [
+              {
+                "config": {
+                  "showLegend": true,
+                  "style": {
+                    "color": {
+                      "field": "magnitude",
+                      "fixed": "dark-green"
+                    },
+                    "opacity": 0.8,
+                    "rotation": {
+                      "fixed": 0,
+                      "max": 360,
+                      "min": -360,
+                      "mode": "mod"
+                    },
+                    "size": {
+                      "field": "magnitude",
+                      "fixed": 5,
+                      "max": 30,
+                      "min": 15
+                    },
+                    "symbol": {
+                      "fixed": "img/icons/marker/circle.svg",
+                      "mode": "fixed"
+                    },
+                    "textConfig": {
+                      "fontSize": 12,
+                      "offsetX": 0,
+                      "offsetY": 0,
+                      "textAlign": "center",
+                      "textBaseline": "middle"
+                    }
+                  }
+                },
+                "location": {
+                  "mode": "coords",
+                  "coords": {
+                    "latitude": "latitude",
+                    "longitude": "longitude"
+                  },
+                  "latitude": "latitude",
+                  "longitude": "longitude"
+                },
+                "name": "Romanian Events",
+                "tooltip": true,
+                "type": "markers"
+              }
+            ],
+            "tooltip": {
+              "mode": "details"
+            },
+            "view": {
+              "allLayers": true,
+              "id": "coords",
+              "lat": 45.9432,
+              "lon": 24.9668,
+              "zoom": 6
+            }
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"region\"] =~ /Romania/)\n  |> filter(fn: (r) => r[\"_field\"] == \"event_id\" or r[\"_field\"] == \"magnitude\" or r[\"_field\"] == \"latitude\" or r[\"_field\"] == \"longitude\" or r[\"_field\"] == \"place\")\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => exists r.magnitude and exists r.latitude and exists r.longitude)\n  |> group()\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 200)",
+              "refId": "A"
+            }
+          ],
+          "title": "Romania Focus View",
+          "type": "geomap"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "tags": [
+        "seismic",
+        "geographic",
+        "maps"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-24h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Geographic View and Trends",
+      "uid": "seismic-geographic",
+      "version": 1,
+      "weekStart": ""
+    }
+  03-statistical-analysis.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 3,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Comparison of batch vs streaming data processing",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 30,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Batch Processing"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "green",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Stream Processing"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "alias": "Batch Processing",
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"daily_global_stats\")\n  |> filter(fn: (r) => r[\"source\"] == \"batch\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)",
+              "refId": "A"
+            },
+            {
+              "alias": "Stream Processing",
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"daily_global_stats\")\n  |> filter(fn: (r) => r[\"source\"] == \"stream\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)",
+              "refId": "B"
+            }
+          ],
+          "title": "Batch vs Stream Processing Comparison",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Historical magnitude distribution from USGS data",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                }
+              },
+              "mappings": []
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byFrameRefID",
+                  "options": "A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "${__field.labels.mag_bin}"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "id": 2,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true,
+              "values": []
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"monthly_magnitude_stats\")\n  |> filter(fn: (r) => r[\"source\"] == \"batch\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"mag_bin\"])\n  |> sum()",
+              "refId": "A"
+            }
+          ],
+          "title": "Historical Magnitude Distribution (Batch)",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Real-time magnitude distribution from streaming data",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                }
+              },
+              "mappings": []
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byFrameRefID",
+                  "options": "A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "${__field.labels.mag_bin}"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true,
+              "values": []
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"monthly_magnitude_stats\")\n  |> filter(fn: (r) => r[\"source\"] == \"stream\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"mag_bin\"])\n  |> sum()",
+              "refId": "A"
+            }
+          ],
+          "title": "Real-time Magnitude Distribution (Stream)",
+          "type": "piechart"
+        }
+      ],
+      "refresh": "1m",
+      "schemaVersion": 38,
+      "tags": [
+        "seismic",
+        "analytics",
+        "statistics"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-7d",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Processing Pipeline Comparison",
+      "uid": "seismic-analytics",
+      "version": 1,
+      "weekStart": ""
+    }
+  04-operational-monitoring.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 4,
+      "links": [],
+      "liveNow": true,
+      "panels": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "System health overview",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 0,
+                      "text": "DOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "UP"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -1d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"source\"] == \"stream\")\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: true)\n  |> fill(value: 0)\n  |> map(fn: (r) => ({ _value: if r._value > 0 then 1 else 0 }))",
+              "refId": "A"
+            }
+          ],
+          "title": "Streaming Pipeline",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Batch pipeline status",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 0,
+                      "text": "INACTIVE"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "ACTIVE"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
+          "id": 2,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -12mo)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"source\"] == \"batch\")\n  |> aggregateWindow(every: 12mo, fn: count, createEmpty: true)\n  |> fill(value: 0)\n  |> map(fn: (r) => ({ _value: if r._value > 0 then 1 else 0 }))",
+              "refId": "A"
+            }
+          ],
+          "title": "Batch Pipeline",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Event producer status",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 0,
+                      "text": "STOPPED"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "RUNNING"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
+          "id": 3,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -1d)\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: true)\n  |> fill(value: 0)\n  |> map(fn: (r) => ({ _value: if r._value > 0 then 1 else 0 }))",
+              "refId": "A"
+            }
+          ],
+          "title": "Event Producer",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "InfluxDB storage status",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 0,
+                      "text": "ERROR"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "HEALTHY"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 18,
+            "y": 0
+          },
+          "id": 4,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -1d)\n  |> aggregateWindow(every: 1d, fn: count, createEmpty: true)\n  |> fill(value: 0)\n  |> map(fn: (r) => ({ _value: if r._value > 0 then 1 else 0 }))",
+              "refId": "A"
+            }
+          ],
+          "title": "InfluxDB",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Real-time data ingestion rate",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 30,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "vis": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          },
+          "id": 5,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "alias": "Stream Events",
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"source\"] == \"stream\")\n  |> aggregateWindow(every: 1m, fn: count, createEmpty: false)\n  |> map(fn: (r) => ({ _time: r._time, _value: float(v: r._value) / 60.0 }))",
+              "refId": "A"
+            },
+            {
+              "alias": "Batch Events",
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"source\"] == \"batch\")\n  |> aggregateWindow(every: 1m, fn: count, createEmpty: false)\n  |> map(fn: (r) => ({ _time: r._time, _value: float(v: r._value) / 60.0 }))",
+              "refId": "B"
+            }
+          ],
+          "title": "Data Ingestion Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "Data storage metrics",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Total Records"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "gradient",
+                      "type": "gauge"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 14
+          },
+          "id": 7,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart)\n  |> group(columns: [\"_measurement\"])\n  |> count()\n  |> map(fn: (r) => ({ Measurement: r._measurement, \"Total Records\": r._value }))",
+              "refId": "A"
+            }
+          ],
+          "title": "Storage Statistics",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "influxdb",
+            "name": "InfluxDB-SeismicData"
+          },
+          "description": "System alerts and warnings",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Alert Level"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "basic",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 14
+          },
+          "id": 8,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "_time"
+              }
+            ]
+          },
+          "pluginVersion": "10.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "influxdb",
+                "name": "InfluxDB-SeismicData"
+              },
+              "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"earthquake_events\")\n  |> filter(fn: (r) => r[\"_field\"] == \"magnitude\")\n  |> filter(fn: (r) => r[\"_value\"] >= 6.0)\n  |> map(fn: (r) => ({ \n    _time: r._time, \n    Region: r.region, \n    \"Max Magnitude\": r._value,\n    \"Alert Level\": if r._value >= 7.0 then \"CRITICAL\" else if r._value >= 6.0 then \"HIGH\" else \"MEDIUM\"\n  }))\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 20)",
+              "refId": "A"
+            }
+          ],
+          "title": "Recent Alerts",
+          "type": "table"
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 38,
+      "tags": [
+        "seismic",
+        "operational",
+        "monitoring"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "System Health & Status",
+      "uid": "seismic-operational",
+      "version": 1,
+      "weekStart": ""
+    }
