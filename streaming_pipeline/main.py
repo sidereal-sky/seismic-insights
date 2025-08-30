@@ -1,9 +1,10 @@
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.datastream.connectors.kafka import KafkaSource, KafkaOffsetsInitializer
 from pyflink.common.serialization import SimpleStringSchema
-from pyflink.common.watermark_strategy import WatermarkStrategy
+from pyflink.common.watermark_strategy import WatermarkStrategy, TimestampAssigner
 from pyflink.common.typeinfo import Types
 from pyflink.datastream.functions import KeyedProcessFunction
+from pyflink.common.time import Duration
 from datetime import datetime
 
 import logging
@@ -54,7 +55,7 @@ def main():
 
     ds = env.from_source(
         source=kafka_source,
-        watermark_strategy=WatermarkStrategy.for_monotonous_timestamps(),
+        watermark_strategy=WatermarkStrategy.no_watermarks(),
         source_name=KAFKA_SOURCE_NAME
     )
 
@@ -71,7 +72,12 @@ def main():
         output_type=Types.MAP(Types.STRING(), Types.STRING())
     )
 
-    filtered_events = events \
+    # Assign timestamps and watermarks
+    events_with_timestamps = events.assign_timestamps_and_watermarks(
+        WatermarkStrategy.for_bounded_out_of_orderness(Duration.of_seconds(30)).with_timestamp_assigner(SeismicTimestampAssigner())
+    )
+
+    filtered_events = events_with_timestamps \
         .filter(lambda ev: is_processable_event(ev, MIN_MAGNITUDE))
 
     deduped_events = filtered_events \
@@ -107,6 +113,18 @@ def main():
     influx_adapter.write_daily_global_stats(daily_global)
 
     env.execute(JOB_NAME)
+
+class SeismicTimestampAssigner(TimestampAssigner):
+    def extract_timestamp(self, element, record_timestamp):
+        try:
+            event_time_str = element.get("event_time")
+            if event_time_str:
+                return int(datetime.fromisoformat(event_time_str.replace("Z", "+00:00")).timestamp() * 1000)  # Convert to milliseconds
+            else:
+                return record_timestamp
+        except Exception as e:
+            logging.error(f"Error extracting timestamp from event {element.get('id', 'unknown')}: {e}")
+            return record_timestamp
 
 if __name__ == '__main__':
     main()

@@ -14,4 +14,4 @@ data:
   INFLUXDB_BUCKET: "earthquakes"
   MIN_MAGNITUDE: "4.0"
   JOB_NAME: "Seismic Streaming Pipeline"
-  PRODUCE_INTERVAL_SECS: "5"
+  PRODUCE_INTERVAL_SECS: "5.0"

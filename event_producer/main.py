@@ -47,6 +47,7 @@ class SeismicEventProducer:
 def main():
     logging.basicConfig(level=logging.INFO)
     logging.info("Starting Seismic Event Producer...")
+    logging.info(f"Event production interval: {PRODUCE_INTERVAL_SECS} seconds")
 
     producer = SeismicEventProducer()
     producer.run()

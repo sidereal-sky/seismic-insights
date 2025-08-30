@@ -5,11 +5,11 @@ from .client import SeismicInfluxDBClient
 
 from .models import (
     EarthquakeEvent,
-    DailyGlobalStats,
+    StreamingGlobalStats,
     StreamingRegionalStats,
-    SignificantEventAlert,
-    RealtimeMagnitudeDistribution,
-    DepthPatternAnalysis,
+    StreamingSignificantAlert,
+    StreamingMagnitudeDistribution,
+    StreamingDepthPattern,
     SequenceDetection
 )
 
@@ -29,6 +29,8 @@ class FlinkInfluxDBAdapter:
         """Writes a PyFlink DataStream of raw earthquake events."""
         def sink_event(event: Dict[str, Any]):
             try:
+                logging.info(f"Writing raw event to InfluxDB: {event['id']}")
+
                 # Parse timestamp from string to datetime if needed
                 if isinstance(event["event_time"], str):
                     from datetime import datetime
@@ -56,18 +58,22 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing raw event: {e}")
 
-        return stream.map(sink_event)
+        stream.map(sink_event).print()
 
     def write_daily_global_stats(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
-                timestamp = datetime.strptime(stats["date"], "%Y-%m-%d")
-                point = DailyGlobalStats(
-                    date=timestamp,
+                logging.info(f"Writing daily global stats: {stats}")
+
+                min_event_time = datetime.fromisoformat(stats["min_event_time"].replace('Z', '+00:00'))
+                max_event_time = datetime.fromisoformat(stats["max_event_time"].replace('Z', '+00:00'))
+
+                point = StreamingGlobalStats(
+                    min_event_time=min_event_time,
+                    max_event_time=max_event_time,
                     eq_count=int(stats["eq_count"]),
                     avg_mag=float(stats.get("avg_mag", "0")),
-                    max_mag=float(stats.get("max_mag", "0")),
-                    source="stream"
+                    max_mag=float(stats.get("max_mag", "0"))
                 ).to_influx_point("daily_global_stats")
 
                 with SeismicInfluxDBClient(self.url, self.token, self.org, self.bucket, self.timeout) as client:
@@ -75,17 +81,22 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing daily global stats: {e}")
 
-        return stream.map(sink_stat)
+        stream.map(sink_stat).print()
 
     def write_hourly_global_stats(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
-                point = DailyGlobalStats(
-                    date=datetime.now(),
+                logging.info(f"Writing hourly global stats: {stats}")
+
+                min_event_time = datetime.fromisoformat(stats["min_event_time"].replace('Z', '+00:00'))
+                max_event_time = datetime.fromisoformat(stats["max_event_time"].replace('Z', '+00:00'))
+
+                point = StreamingGlobalStats(
+                    min_event_time=min_event_time,
+                    max_event_time=max_event_time,
                     eq_count=int(stats["eq_count"]),
                     avg_mag=float(stats.get("avg_mag", "0")),
-                    max_mag=float(stats.get("max_mag", "0")),
-                    source="stream"
+                    max_mag=float(stats.get("max_mag", "0"))
                 ).to_influx_point("hourly_global_stats")
 
                 with SeismicInfluxDBClient(self.url, self.token, self.org, self.bucket, self.timeout) as client:
@@ -93,19 +104,24 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing hourly global stats: {e}")
 
-        return stream.map(sink_stat)
+        stream.map(sink_stat).print()
 
     def write_rolling_regional_stats(self, stream, window_type: str):
         def sink_stat(stats: Dict[str, Any]):
             try:
+                logging.info(f"Writing rolling regional stats ({window_type}): {stats}")
+
+                min_event_time = datetime.fromisoformat(stats["min_event_time"].replace('Z', '+00:00'))
+                max_event_time = datetime.fromisoformat(stats["max_event_time"].replace('Z', '+00:00'))
+
                 point = StreamingRegionalStats(
-                    timestamp=datetime.now(),
+                    min_event_time=min_event_time,
+                    max_event_time=max_event_time,
                     region=stats.get("region", "unknown"),
                     eq_count=int(stats["eq_count"]),
                     avg_mag=float(stats.get("avg_mag", "0")),
                     max_mag=float(stats.get("max_mag", "0")),
-                    window_type=window_type,
-                    source="stream"
+                    window_type=window_type
                 ).to_influx_point("rolling_regional_stats")
 
                 with SeismicInfluxDBClient(self.url, self.token, self.org, self.bucket, self.timeout) as client:
@@ -113,22 +129,26 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing rolling regional stats: {e}")
 
-        return stream.map(sink_stat)
+        stream.map(sink_stat).print()
 
     def write_significant_alerts(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
+                logging.info(f"Writing significant alert: {stats}")
+
+                min_event_time = datetime.fromisoformat(stats["min_event_time"].replace('Z', '+00:00'))
+                max_event_time = datetime.fromisoformat(stats["max_event_time"].replace('Z', '+00:00'))
                 max_mag = float(stats.get("max_mag", "0"))
                 alert_level = "critical" if max_mag >= 7.0 else "high" if max_mag >= 6.5 else "moderate"
 
-                point = SignificantEventAlert(
-                    timestamp=datetime.now(),
+                point = StreamingSignificantAlert(
+                    min_event_time=min_event_time,
+                    max_event_time=max_event_time,
                     region=stats.get("region", "unknown"),
                     eq_count=int(stats["eq_count"]),
                     avg_mag=float(stats.get("avg_mag", "0")),
                     max_mag=max_mag,
-                    alert_level=alert_level,
-                    source="stream"
+                    alert_level=alert_level
                 ).to_influx_point("significant_event_alerts")
 
                 with SeismicInfluxDBClient(self.url, self.token, self.org, self.bucket, self.timeout) as client:
@@ -136,16 +156,21 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing significant alerts: {e}")
 
-        return stream.map(sink_stat)
+        stream.map(sink_stat).print()
 
     def write_magnitude_distribution(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
-                point = RealtimeMagnitudeDistribution(
-                    timestamp=datetime.now(),
+                logging.info(f"Writing magnitude distribution: {stats}")
+
+                min_event_time = datetime.fromisoformat(stats["min_event_time"].replace('Z', '+00:00'))
+                max_event_time = datetime.fromisoformat(stats["max_event_time"].replace('Z', '+00:00'))
+
+                point = StreamingMagnitudeDistribution(
+                    min_event_time=min_event_time,
+                    max_event_time=max_event_time,
                     mag_bin=stats.get("mag_bin", "unknown"),
-                    eq_count=int(stats["eq_count"]),
-                    source="stream"
+                    eq_count=int(stats["eq_count"])
                 ).to_influx_point("realtime_magnitude_distribution")
 
                 with SeismicInfluxDBClient(self.url, self.token, self.org, self.bucket, self.timeout) as client:
@@ -153,17 +178,22 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing magnitude distribution: {e}")
 
-        return stream.map(sink_stat)
+        stream.map(sink_stat).print()
 
     def write_depth_patterns(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
-                point = DepthPatternAnalysis(
-                    timestamp=datetime.now(),
+                logging.info(f"Writing depth pattern: {stats}")
+
+                min_event_time = datetime.fromisoformat(stats["min_event_time"].replace('Z', '+00:00'))
+                max_event_time = datetime.fromisoformat(stats["max_event_time"].replace('Z', '+00:00'))
+
+                point = StreamingDepthPattern(
+                    min_event_time=min_event_time,
+                    max_event_time=max_event_time,
                     region=stats.get("region", "unknown"),
                     depth_bin=stats.get("depth_bin", "unknown"),
-                    eq_count=int(stats["eq_count"]),
-                    source="stream"
+                    eq_count=int(stats["eq_count"])
                 ).to_influx_point("depth_pattern_analysis")
 
                 with SeismicInfluxDBClient(self.url, self.token, self.org, self.bucket, self.timeout) as client:
@@ -171,34 +201,31 @@ class FlinkInfluxDBAdapter:
             except Exception as e:
                 logging.error(f"Error writing depth patterns: {e}")
 
-        return stream.map(sink_stat)
+        stream.map(sink_stat).print()
 
     def write_sequence_detection(self, stream):
         def sink_stat(stats: Dict[str, Any]):
             try:
-                first_time = datetime.fromisoformat(stats["first_event_time"].replace('Z', '+00:00')) if stats.get("first_event_time") and stats["first_event_time"] != "" else datetime.now()
-                last_time = datetime.fromisoformat(stats["last_event_time"].replace('Z', '+00:00')) if stats.get("last_event_time") and stats["last_event_time"] != "" else datetime.now()
+                logging.info(f"Writing sequence detection: {stats}")
+
+                first_event_time = datetime.fromisoformat(stats["min_event_time"].replace('Z', '+00:00'))
+                last_event_time = datetime.fromisoformat(stats["max_event_time"].replace('Z', '+00:00'))
 
                 point = SequenceDetection(
-                    timestamp=datetime.now(),
                     region=stats.get("region", "unknown"),
                     eq_count=int(stats["eq_count"]),
                     avg_mag=float(stats.get("avg_mag", "0")),
                     max_mag=float(stats.get("max_mag", "0")),
-                    first_event_time=first_time,
-                    last_event_time=last_time,
-                    duration_minutes=int(stats.get("duration_minutes", "0")),
-                    lat_grid=int(stats.get("lat_grid", "0")),
-                    lon_grid=int(stats.get("lon_grid", "0")),
-                    sequence_type=stats.get("sequence_type", "unknown"),
-                    source="stream"
+                    first_event_time=first_event_time,
+                    last_event_time=last_event_time,
+                    lat_grid=float(stats.get("lat_grid", "0")),
+                    lon_grid=float(stats.get("lon_grid", "0")),
+                    sequence_type=stats.get("sequence_type", "unknown")
                 ).to_influx_point("sequence_detection")
 
                 with SeismicInfluxDBClient(self.url, self.token, self.org, self.bucket, self.timeout) as client:
                     client.write_points([point])
-
-                logging.info(f"Detected {stats['sequence_type']} sequence in {stats['region']}: {stats['eq_count']} events")
             except Exception as e:
                 logging.error(f"Error writing sequence detection: {e}")
 
-        return stream.map(sink_stat)
+        stream.map(sink_stat).print()

@@ -21,7 +21,7 @@ class SeismicEventGenerator:
         Generate a synthetic seismic event with random values.
         Returns: Dictionary containing a complete earthquake event
         """
-        event_time = (datetime.utcnow() - timedelta(seconds=random.randint(0, 3600))).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        event_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         latitude = round(random.uniform(-90, 90), 4)
         longitude = round(random.uniform(-180, 180), 4)
         depth = round(random.uniform(0, 400), 3)
