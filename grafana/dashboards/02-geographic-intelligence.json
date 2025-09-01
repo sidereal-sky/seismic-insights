@@ -244,7 +244,7 @@
             "type": "influxdb",
             "name": "InfluxDB-SeismicData"
           },
-          "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"weekly_regional_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"region\"])\n  |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"weekly_regional_stats\" or (r[\"_measurement\"] == \"rolling_regional_stats\" and r[\"window_type\"] == \"7day\"))\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"region\"])\n  |> aggregateWindow(every: 1d, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -339,7 +339,7 @@
             "type": "influxdb",
             "name": "InfluxDB-SeismicData"
           },
-          "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"weekly_regional_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"region\"])\n  |> sum()\n  |> drop(columns: [\"_time\", \"_start\", \"_stop\"])\n  |> map(fn: (r) => {\n      return {\n        _time: now(),\n        _field: r.region,\n        _value: r._value\n      }\n  })\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: 15)",          "refId": "A"
+          "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"weekly_regional_stats\" or (r[\"_measurement\"] == \"rolling_regional_stats\" and r[\"window_type\"] == \"7day\"))\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"region\"])\n  |> sum()\n  |> drop(columns: [\"_time\", \"_start\", \"_stop\"])\n  |> map(fn: (r) => {\n      return {\n        _time: now(),\n        _field: r.region,\n        _value: r._value\n      }\n  })\n  |> group(columns: [\"_field\"])\n  |> sort(columns: [\"_value\"], desc: true)\n  |> limit(n: 15)",          "refId": "A"
         }
       ],
       "title": "Most Active Regions",
@@ -400,7 +400,7 @@
             "type": "influxdb",
             "name": "InfluxDB-SeismicData"
           },
-          "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"monthly_depth_stats\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"depth_bin\"])\n  |> sum()\n  |> map(fn: (r) => {\n      label = if r.depth_bin == \"shallow\" then \"Shallow\"\n              else if r.depth_bin == \"intermediate\" then \"Intermediate\"\n              else if r.depth_bin == \"deep\" then \"Deep\"\n              else r.depth_bin\n      return {r with _field: label}\n  })\n  |> drop(columns: [\"depth_bin\"])\n  |> group(columns: [\"_field\"])",
+          "query": "from(bucket: \"earthquakes\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"monthly_depth_stats\" or r[\"_measurement\"] == \"depth_pattern_analysis\")\n  |> filter(fn: (r) => r[\"_field\"] == \"eq_count\")\n  |> group(columns: [\"depth_bin\"])\n  |> sum()\n  |> map(fn: (r) => {\n      label = if r.depth_bin == \"shallow\" then \"Shallow\"\n              else if r.depth_bin == \"intermediate\" then \"Intermediate\"\n              else if r.depth_bin == \"deep\" then \"Deep\"\n              else r.depth_bin\n      return {r with _field: label}\n  })\n  |> drop(columns: [\"depth_bin\"])\n  |> group(columns: [\"_field\"])",
           "refId": "A"
         }
       ],

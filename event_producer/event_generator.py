@@ -22,10 +22,10 @@ class SeismicEventGenerator:
         Returns: Dictionary containing a complete earthquake event
         """
         event_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        latitude = round(random.uniform(-90, 90), 4)
-        longitude = round(random.uniform(-180, 180), 4)
+        latitude = round(random.uniform(44.21, 47.75), 4)
+        longitude = round(random.uniform(22.69, 27.2), 4)
         depth = round(random.uniform(0, 400), 3)
-        mag = round(random.uniform(1.0, 9.0), 1)
+        mag = round(random.uniform(1.0, 7.0), 1)
         magType = random.choice(MAGNITUDE_TYPES)
         nst = random.randint(1, 200)
         gap = random.randint(1, 300)

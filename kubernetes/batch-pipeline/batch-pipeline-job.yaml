@@ -37,7 +37,7 @@ spec:
               name: seismic-secrets
               key: INFLUXDB_TOKEN
         - name: START_DATE
-          value: "2024-08-03"
+          value: "2024-09-01"
         - name: END_DATE
-          value: "2025-08-03"
+          value: "2025-08-31"
       restartPolicy: OnFailure
